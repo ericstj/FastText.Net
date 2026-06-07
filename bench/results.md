@@ -42,3 +42,28 @@ BenchmarkDotNet v0.14.0, Windows 11 (10.0.26200.8390)
 
 Loading and fully decoding `lid.176.ftz` from disk takes **~4.3 ms**. Loading is a
 one-time cost; the resulting `FastTextModel` is immutable and reused across predictions.
+
+## Comparison vs. native fastText
+
+The managed port was compared against a native P/Invoke wrapper over the original
+fastText C++ library, on the same `lid.176.ftz` model and identical inputs,
+single-threaded. The comparison measures a full language-detection call (UTF-8
+encoding, predict top-1, label parsing).
+
+| Workload                | Native wrapper | FastText.Net | Speedup |
+|------------------------ |---------------:|-------------:|--------:|
+| Detect short string     |  4,053 ns      |    817 ns    | ~5.0x   |
+| Detect 10-string corpus | 35,623 ns      | 26,128 ns    | ~1.36x  |
+
+The managed port is faster — dramatically so on short inputs — because the native path
+crosses the managed/native boundary twice per call (once to predict, once to free the
+returned C string) and allocates a native result string each time. For small inputs that
+interop overhead dominates the actual model math; the managed port has no interop and
+reuses pooled buffers. On the longer corpus the model compute is a larger share of the
+work, so the gap narrows.
+
+Top predicted labels match the native library exactly. Probabilities differ marginally
+because FastText.Net includes the `</s>` end-of-sentence token (matching the fastText CLI
+and Python conventions), whereas the native wrapper's single-prediction entry point does
+not — this does not affect which label ranks first.
+
