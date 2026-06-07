@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This project, **fastText.Net**, is a managed C# port of the inference (model loading
+This project, **FastText.Net**, is a managed C# port of the inference (model loading
 and prediction) portion of **fastText**, an open-source library created by Facebook AI
 Research (Meta).
 

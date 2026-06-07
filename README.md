@@ -1,4 +1,4 @@
-# fastText.Net
+# FastText.Net
 
 A managed, **dependency-free** C# port of [Facebook fastText](https://github.com/facebookresearch/fastText)
 **inference**, focused on text/language classification. Load a pretrained supervised

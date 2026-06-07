@@ -27,13 +27,13 @@ jobs:
           fi
 
       - name: Restore
-        run: dotnet restore fastText.Net.sln
+        run: dotnet restore FastText.Net.sln
 
       - name: Build
-        run: dotnet build fastText.Net.sln -c Release --no-restore ${{ steps.ver.outputs.arg }}
+        run: dotnet build FastText.Net.sln -c Release --no-restore ${{ steps.ver.outputs.arg }}
 
       - name: Test
-        run: dotnet test fastText.Net.sln -c Release --no-build --verbosity normal
+        run: dotnet test FastText.Net.sln -c Release --no-build --verbosity normal
 
       - name: Pack
         run: dotnet pack src/FastText.Net/FastText.Net.csproj -c Release --no-build -o artifacts ${{ steps.ver.outputs.arg }}

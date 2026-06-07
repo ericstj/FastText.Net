@@ -25,8 +25,8 @@
     <PackageTags>fasttext;language-detection;language-identification;nlp;text-classification;machine-learning</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageProjectUrl>https://github.com/ericstj/fastText.Net</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/ericstj/fastText.Net</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/ericstj/FastText.Net</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ericstj/FastText.Net</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
