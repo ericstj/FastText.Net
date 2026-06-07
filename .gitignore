@@ -1,0 +1,11 @@
+# Build artifacts
+bin/
+obj/
+BenchmarkDotNet.Artifacts/
+
+# Pretrained models (download separately; see THIRD-PARTY-NOTICES.md)
+*.ftz
+*.bin
+
+# Python oracle helpers
+__pycache__/

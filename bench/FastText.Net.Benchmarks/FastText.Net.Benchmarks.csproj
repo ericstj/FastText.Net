@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Optimize>true</Optimize>
+    <AssemblyName>FastText.Net.Benchmarks</AssemblyName>
+    <RootNamespace>FastTextNet.Benchmarks</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FastText.Net\FastText.Net.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="models\lid.176.ftz" CopyToOutputDirectory="PreserveNewest" Condition="Exists('models\lid.176.ftz')" />
+  </ItemGroup>
+
+</Project>
