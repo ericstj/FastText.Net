@@ -25,6 +25,7 @@
     <PackageTags>fasttext;language-detection;language-identification;nlp;text-classification;machine-learning</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageProjectUrl>https://github.com/ericstj/FastText.Net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ericstj/FastText.Net</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -35,7 +36,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\eng\icon.png" Pack="true" PackagePath="\" />
     <None Include="..\..\THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 

@@ -5,11 +5,11 @@ A managed, **dependency-free** C# port of [Facebook fastText](https://github.com
 model (such as `lid.176.ftz` for language identification) and classify text without
 shipping any native binaries.
 
-This is a port of the prediction path only (model loading + `predict`); training is not
-included. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for attribution.
-
 > **Unofficial.** This is an independent, community port of the now-archived fastText
-> project. It is **not affiliated with or endorsed by Meta / Facebook**.
+> project. It is **not affiliated with or endorsed by Meta / Facebook**. "fastText" is a
+> trademark of its respective owner.
+
+Only the prediction path is ported (model loading + `predict`); training is not included.
 
 ## Features
 
@@ -20,6 +20,12 @@ included. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for attribution.
   reference implementation (verified against the official Python `fasttext` package).
 - SIMD-accelerated linear algebra via `System.Numerics.Tensors` (`TensorPrimitives`).
 - Allocation-light prediction hot path (pooled buffers, thread-local state).
+
+## Installation
+
+```pwsh
+dotnet add package FastText.Net
+```
 
 ## Usage
 
@@ -39,36 +45,17 @@ foreach (var p in model.Predict("Bonjour, comment allez-vous?", k: 3))
 
 `FastTextModel` is immutable after loading and safe to share across threads.
 
-### Getting a model
+## Getting a model
 
-Language-identification models are published by Facebook (CC BY-SA 3.0) and are **not**
-bundled here:
+Pretrained language-identification models are published by Facebook (CC BY-SA 3.0) and
+are **not** bundled with this package:
 
 - `lid.176.ftz` (~917 KB, quantized): https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz
 - `lid.176.bin` (~126 MB, full): https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
 
-## Layout
-
-| Path | Description |
-| --- | --- |
-| `src/FastText.Net/` | The library. |
-| `tests/FastText.Net.Tests/` | xUnit correctness tests vs. the reference `fasttext` outputs. |
-| `bench/FastText.Net.Benchmarks/` | BenchmarkDotNet performance suite. |
-
-## Building & testing
-
-```pwsh
-dotnet build -c Release
-dotnet test  -c Release           # place lid.176.ftz under tests/.../models or set FASTTEXT_LID_MODEL
-dotnet run   -c Release --project bench/FastText.Net.Benchmarks
-```
-
-## Benchmarks
-
-Measured on the quantized `lid.176.ftz` model (16-dim embeddings, 176 labels) on a
-single thread. See [bench/results.md](bench/results.md) for the full report and the
-machine it was captured on.
+Any supervised fastText model in the standard binary format will load.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Derived from fastText (MIT, © Facebook, Inc.).
+MIT. Derived from fastText (MIT, © Facebook, Inc.). See the project repository for
+full attribution and third-party notices: https://github.com/ericstj/FastText.Net
