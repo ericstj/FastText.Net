@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)..\..\eng\Open.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +21,23 @@
 
   <ItemGroup>
     <None Include="oracle_lid.json" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="models\lid.176.ftz" CopyToOutputDirectory="PreserveNewest" Condition="Exists('models\lid.176.ftz')" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <FastTextModelDir>$(MSBuildProjectDirectory)\models</FastTextModelDir>
+    <FastTextModelFile>$(FastTextModelDir)\lid.176.ftz</FastTextModelFile>
+    <FastTextModelUrl>https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.ftz</FastTextModelUrl>
+  </PropertyGroup>
+
+  <Target Name="DownloadFastTextModel" AfterTargets="Build">
+    <DownloadFile Condition="!Exists('$(FastTextModelFile)')"
+                  SourceUrl="$(FastTextModelUrl)"
+                  DestinationFolder="$(FastTextModelDir)"
+                  DestinationFileName="lid.176.ftz"
+                  Retries="2" />
+    <Copy SourceFiles="$(FastTextModelFile)"
+          DestinationFolder="$(OutDir)models"
+          SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

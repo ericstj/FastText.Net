@@ -1,6 +1,7 @@
 # Build artifacts
 bin/
 obj/
+artifacts/
 BenchmarkDotNet.Artifacts/
 
 # Pretrained models (download separately; see THIRD-PARTY-NOTICES.md)
