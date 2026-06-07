@@ -1,0 +1,394 @@
+[
+  {
+    "model": "softmax.bin",
+    "loss": "softmax",
+    "dim": 8,
+    "labelCount": 4,
+    "cases": [
+      {
+        "text": "hello good morning how are you",
+        "labels": [
+          "__label__greeting",
+          "__label__tech",
+          "__label__weather",
+          "__label__food"
+        ],
+        "probs": [
+          0.9890906810760498,
+          0.007329389452934265,
+          0.0032795427832752466,
+          0.0003403963928576559
+        ]
+      },
+      {
+        "text": "cold rain and snow with strong wind",
+        "labels": [
+          "__label__food",
+          "__label__weather",
+          "__label__tech",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.48475322127342224,
+          0.27922821044921875,
+          0.20141687989234924,
+          0.034641657024621964
+        ]
+      },
+      {
+        "text": "the software code runs on a fast computer",
+        "labels": [
+          "__label__tech",
+          "__label__weather",
+          "__label__food",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.37211257219314575,
+          0.2505742013454437,
+          0.2481619119644165,
+          0.12919123470783234
+        ]
+      },
+      {
+        "text": "delicious pizza pasta and sweet cake",
+        "labels": [
+          "__label__food",
+          "__label__weather",
+          "__label__tech",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.6723429560661316,
+          0.1964251548051834,
+          0.1240093857049942,
+          0.007262565661221743
+        ]
+      },
+      {
+        "text": "a server training machine learning models",
+        "labels": [
+          "__label__tech",
+          "__label__greeting",
+          "__label__weather",
+          "__label__food"
+        ],
+        "probs": [
+          0.37376466393470764,
+          0.32699012756347656,
+          0.18982262909412384,
+          0.10946258157491684
+        ]
+      },
+      {
+        "text": "warm sunny weather today",
+        "labels": [
+          "__label__greeting",
+          "__label__weather",
+          "__label__tech",
+          "__label__food"
+        ],
+        "probs": [
+          0.30924466252326965,
+          0.25894495844841003,
+          0.24735483527183533,
+          0.1844954788684845
+        ]
+      }
+    ]
+  },
+  {
+    "model": "ns.bin",
+    "loss": "ns",
+    "dim": 8,
+    "labelCount": 4,
+    "cases": [
+      {
+        "text": "hello good morning how are you",
+        "labels": [
+          "__label__greeting",
+          "__label__weather",
+          "__label__tech",
+          "__label__food"
+        ],
+        "probs": [
+          0.9955416321754456,
+          0.06755668669939041,
+          0.04743587225675583,
+          1.0000003385357559e-05
+        ]
+      },
+      {
+        "text": "cold rain and snow with strong wind",
+        "labels": [
+          "__label__food",
+          "__label__weather",
+          "__label__tech",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.21734751760959625,
+          0.21734751760959625,
+          0.0980893224477768,
+          0.006913838442414999
+        ]
+      },
+      {
+        "text": "the software code runs on a fast computer",
+        "labels": [
+          "__label__tech",
+          "__label__weather",
+          "__label__food",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.348655104637146,
+          0.1778208613395691,
+          0.056662432849407196,
+          0.04743587225675583
+        ]
+      },
+      {
+        "text": "delicious pizza pasta and sweet cake",
+        "labels": [
+          "__label__food",
+          "__label__weather",
+          "__label__tech",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.8311530351638794,
+          0.2568419873714447,
+          0.14415885508060455,
+          0.000949943671002984
+        ]
+      },
+      {
+        "text": "a server training machine learning models",
+        "labels": [
+          "__label__tech",
+          "__label__greeting",
+          "__label__weather",
+          "__label__food"
+        ],
+        "probs": [
+          0.3557848632335663,
+          0.13661839067935944,
+          0.13661839067935944,
+          0.009135636501014233
+        ]
+      },
+      {
+        "text": "warm sunny weather today",
+        "labels": [
+          "__label__greeting",
+          "__label__weather",
+          "__label__tech",
+          "__label__food"
+        ],
+        "probs": [
+          0.22816647589206696,
+          0.22271016240119934,
+          0.11597072333097458,
+          0.01799621433019638
+        ]
+      }
+    ]
+  },
+  {
+    "model": "ova.bin",
+    "loss": "ova",
+    "dim": 8,
+    "labelCount": 4,
+    "cases": [
+      {
+        "text": "hello good morning how are you",
+        "labels": [
+          "__label__greeting",
+          "__label__tech",
+          "__label__weather",
+          "__label__food"
+        ],
+        "probs": [
+          0.9896818399429321,
+          0.08270734548568726,
+          0.07160120457410812,
+          0.0004542184469755739
+        ]
+      },
+      {
+        "text": "cold rain and snow with strong wind",
+        "labels": [
+          "__label__food",
+          "__label__weather",
+          "__label__tech",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.3140605390071869,
+          0.2814156115055084,
+          0.20690405368804932,
+          0.018556566908955574
+        ]
+      },
+      {
+        "text": "the software code runs on a fast computer",
+        "labels": [
+          "__label__tech",
+          "__label__weather",
+          "__label__food",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.29422497749328613,
+          0.275139719247818,
+          0.19194278120994568,
+          0.08757384121417999
+        ]
+      },
+      {
+        "text": "delicious pizza pasta and sweet cake",
+        "labels": [
+          "__label__food",
+          "__label__weather",
+          "__label__tech",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.6992644667625427,
+          0.38492217659950256,
+          0.2814156115055084,
+          0.007355827372521162
+        ]
+      },
+      {
+        "text": "a server training machine learning models",
+        "labels": [
+          "__label__tech",
+          "__label__greeting",
+          "__label__weather",
+          "__label__food"
+        ],
+        "probs": [
+          0.2568419873714447,
+          0.23371636867523193,
+          0.21207880973815918,
+          0.05835584178566933
+        ]
+      },
+      {
+        "text": "warm sunny weather today",
+        "labels": [
+          "__label__weather",
+          "__label__greeting",
+          "__label__tech",
+          "__label__food"
+        ],
+        "probs": [
+          0.23935934901237488,
+          0.22271016240119934,
+          0.1968362182378769,
+          0.08270734548568726
+        ]
+      }
+    ]
+  },
+  {
+    "model": "hs.bin",
+    "loss": "hs",
+    "dim": 8,
+    "labelCount": 4,
+    "cases": [
+      {
+        "text": "hello good morning how are you",
+        "labels": [
+          "__label__greeting",
+          "__label__weather",
+          "__label__tech",
+          "__label__food"
+        ],
+        "probs": [
+          0.9243401885032654,
+          0.06076943874359131,
+          0.010771963745355606,
+          0.004158385563641787
+        ]
+      },
+      {
+        "text": "cold rain and snow with strong wind",
+        "labels": [
+          "__label__food",
+          "__label__tech",
+          "__label__weather",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.3100522458553314,
+          0.2744440734386444,
+          0.23705482482910156,
+          0.1784888505935669
+        ]
+      },
+      {
+        "text": "the software code runs on a fast computer",
+        "labels": [
+          "__label__food",
+          "__label__tech",
+          "__label__weather",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.38850167393684387,
+          0.3199710249900818,
+          0.18701033294200897,
+          0.10455698519945145
+        ]
+      },
+      {
+        "text": "delicious pizza pasta and sweet cake",
+        "labels": [
+          "__label__food",
+          "__label__tech",
+          "__label__weather",
+          "__label__greeting"
+        ],
+        "probs": [
+          0.5358425378799438,
+          0.335501104593277,
+          0.10067234933376312,
+          0.02802404947578907
+        ]
+      },
+      {
+        "text": "a server training machine learning models",
+        "labels": [
+          "__label__greeting",
+          "__label__weather",
+          "__label__tech",
+          "__label__food"
+        ],
+        "probs": [
+          0.2723483741283417,
+          0.2528003454208374,
+          0.24299055337905884,
+          0.23190069198608398
+        ]
+      },
+      {
+        "text": "warm sunny weather today",
+        "labels": [
+          "__label__greeting",
+          "__label__weather",
+          "__label__tech",
+          "__label__food"
+        ],
+        "probs": [
+          0.5317628979682922,
+          0.24741080403327942,
+          0.12413859367370605,
+          0.09672767668962479
+        ]
+      }
+    ]
+  }
+]

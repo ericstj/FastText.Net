@@ -21,6 +21,8 @@
 
   <ItemGroup>
     <None Include="oracle_lid.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="synthetic_oracle.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="synthetic\*.bin" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

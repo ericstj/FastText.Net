@@ -8,5 +8,8 @@ BenchmarkDotNet.Artifacts/
 *.ftz
 *.bin
 
+# ...except the tiny synthetic regression fixtures, which are committed.
+!tests/FastText.Net.Tests/synthetic/*.bin
+
 # Python oracle helpers
 __pycache__/
