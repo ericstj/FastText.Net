@@ -191,7 +191,7 @@ internal sealed class QuantMatrix : Matrix
         Cols = mat.Cols;
         _qnorm = qnorm;
         int nsubq = (int)((Cols + dsub - 1) / dsub);
-        _codesize = (int)(Rows * nsubq);
+        _codesize = checked((int)(Rows * nsubq));
         _codes = new byte[_codesize];
         _pq = new ProductQuantizer((int)Cols, dsub);
         if (_qnorm)

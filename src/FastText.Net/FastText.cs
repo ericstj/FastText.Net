@@ -302,13 +302,16 @@ public sealed partial class FastText
         int eosid = _dict.EosId;
         idx.Sort((a, b) =>
         {
-            bool aBeforeB = eosid == a || (eosid != b && norms[a] > norms[b]);
-            if (aBeforeB)
+            if (a == eosid)
             {
-                return -1;
+                return b == eosid ? 0 : -1;
             }
-            bool bBeforeA = eosid == b || (eosid != a && norms[b] > norms[a]);
-            return bBeforeA ? 1 : 0;
+            if (b == eosid)
+            {
+                return 1;
+            }
+            int byNorm = norms[b].CompareTo(norms[a]);
+            return byNorm != 0 ? byNorm : a.CompareTo(b);
         });
         idx.RemoveRange(cutoff, idx.Count - cutoff);
         return idx;
