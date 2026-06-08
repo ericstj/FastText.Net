@@ -21,10 +21,10 @@ public sealed class FastText
 
     private readonly Args _args;
     private readonly Dictionary _dict;
-    private readonly Matrix _input;
-    private readonly Matrix _output;
-    private readonly Model _model;
-    private readonly bool _quantized;
+    private Matrix _input;
+    private Matrix _output;
+    private Model _model;
+    private bool _quantized;
 
     private DenseMatrix? _precomputedWordVectors;
 
@@ -146,6 +146,79 @@ public sealed class FastText
 
     /// <summary>True if the model is supervised (classification), false for cbow/skipgram.</summary>
     public bool IsSupervised => _args.Model == ModelName.Sup;
+
+    /// <summary>
+    /// Compresses a supervised model with product quantization, mirroring fastText's
+    /// <c>quantize</c>. <paramref name="cutoff"/> optionally prunes the vocabulary to the
+    /// highest-norm embeddings first. Retraining after pruning is not yet supported.
+    /// </summary>
+    public void Quantize(int dsub = 2, bool qnorm = false, int cutoff = 0, bool qout = false, bool retrain = false)
+    {
+        if (_args.Model != ModelName.Sup)
+        {
+            throw new InvalidOperationException("For now we only support quantization of supervised models.");
+        }
+        if (_quantized)
+        {
+            throw new InvalidOperationException("Model is already quantized.");
+        }
+        if (_input is not DenseMatrix input || _output is not DenseMatrix output)
+        {
+            throw new InvalidOperationException("Quantization requires a dense (non-quantized) model.");
+        }
+
+        _args.Qout = qout;
+        int dim = _args.Dim;
+
+        if (cutoff > 0 && cutoff < input.Rows)
+        {
+            if (retrain)
+            {
+                throw new NotSupportedException("Retraining during quantization is not yet supported.");
+            }
+            List<int> idx = SelectEmbeddings(input, cutoff);
+            _dict.Prune(idx);
+            var ninput = new DenseMatrix(idx.Count, dim);
+            for (int i = 0; i < idx.Count; i++)
+            {
+                Array.Copy(input.RawData, (long)idx[i] * dim, ninput.RawData, (long)i * dim, dim);
+            }
+            input = ninput;
+        }
+
+        _input = new QuantMatrix(input, dsub, qnorm);
+        if (_args.Qout)
+        {
+            _output = new QuantMatrix(output, 2, qnorm);
+        }
+        _quantized = true;
+        _precomputedWordVectors = null;
+        _model = ModelLoader.BuildModel(_args, _dict, _input, _output);
+    }
+
+    private List<int> SelectEmbeddings(DenseMatrix input, int cutoff)
+    {
+        var norms = new float[input.Rows];
+        input.L2NormRow(norms);
+        var idx = new List<int>((int)input.Rows);
+        for (int i = 0; i < input.Rows; i++)
+        {
+            idx.Add(i);
+        }
+        int eosid = _dict.EosId;
+        idx.Sort((a, b) =>
+        {
+            bool aBeforeB = eosid == a || (eosid != b && norms[a] > norms[b]);
+            if (aBeforeB)
+            {
+                return -1;
+            }
+            bool bBeforeA = eosid == b || (eosid != a && norms[b] > norms[a]);
+            return bBeforeA ? 1 : 0;
+        });
+        idx.RemoveRange(cutoff, idx.Count - cutoff);
+        return idx;
+    }
 
     /// <summary>The words in the model dictionary, in id order.</summary>
     public IReadOnlyList<string> GetWords()

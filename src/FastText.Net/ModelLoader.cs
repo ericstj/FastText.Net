@@ -76,6 +76,9 @@ internal static class ModelLoader
         output.Save(writer);
     }
 
+    public static Model BuildModel(Args args, Dictionary dict, Matrix input, Matrix output) =>
+        new(input, output, CreateLoss(args, dict, output));
+
     private static Loss CreateLoss(Args args, Dictionary dict, Matrix output)
     {
         IReadOnlyList<long> Counts() => args.Model == ModelName.Sup

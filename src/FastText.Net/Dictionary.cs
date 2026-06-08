@@ -379,6 +379,67 @@ internal sealed class Dictionary
         }
     }
 
+    public int EosId => GetId(Eos);
+
+    /// <summary>
+    /// Prunes the dictionary to the given input-matrix row indices, mirroring fastText's
+    /// quantization cutoff. Rewrites <paramref name="idx"/> in place to the retained rows
+    /// (sorted words followed by retained ngram buckets).
+    /// </summary>
+    public void Prune(List<int> idx)
+    {
+        var words = new List<int>();
+        var ngrams = new List<int>();
+        foreach (int i in idx)
+        {
+            if (i < _nwords)
+            {
+                words.Add(i);
+            }
+            else
+            {
+                ngrams.Add(i);
+            }
+        }
+        words.Sort();
+        idx.Clear();
+        idx.AddRange(words);
+
+        _pruneIdx ??= new Dictionary<int, int>();
+        if (ngrams.Count != 0)
+        {
+            int j = 0;
+            foreach (int ngram in ngrams)
+            {
+                _pruneIdx[ngram - _nwords] = j;
+                j++;
+            }
+            idx.AddRange(ngrams);
+        }
+        _pruneIdxSize = _pruneIdx.Count;
+
+        var compacted = new Entry[_words.Length];
+        int next = 0;
+        for (int i = 0; i < _words.Length; i++)
+        {
+            if (_words[i].Type == EntryType.Label || (next < words.Count && words[next] == i))
+            {
+                compacted[next] = _words[i];
+                next++;
+            }
+        }
+        _nwords = words.Count;
+        _size = _nwords + _nlabels;
+        _words = compacted[..next];
+
+        Array.Fill(_word2int, -1);
+        for (int i = 0; i < _size; i++)
+        {
+            _word2int[Find(_words[i].Word)] = i;
+        }
+        InitNgrams();
+    }
+
     public void Save(BinaryWriter writer)
     {
         writer.Write(_size);

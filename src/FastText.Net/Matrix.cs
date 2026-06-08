@@ -32,6 +32,46 @@ internal sealed class DenseMatrix : Matrix
 
     public void Zero() => Array.Clear(_data);
 
+    internal float[] RawData => _data;
+
+    public float L2NormRow(int i)
+    {
+        int n = (int)Cols;
+        double norm = 0;
+        ReadOnlySpan<float> row = _data.AsSpan(i * n, n);
+        for (int j = 0; j < n; j++)
+        {
+            norm += (double)row[j] * row[j];
+        }
+        if (double.IsNaN(norm))
+        {
+            throw new InvalidOperationException("Encountered NaN computing row norm.");
+        }
+        return (float)Math.Sqrt(norm);
+    }
+
+    public void L2NormRow(Span<float> norms)
+    {
+        for (int i = 0; i < Rows; i++)
+        {
+            norms[i] = L2NormRow(i);
+        }
+    }
+
+    public void DivideRow(ReadOnlySpan<float> denoms)
+    {
+        int n = (int)Cols;
+        for (int i = 0; i < Rows; i++)
+        {
+            float d = denoms[i];
+            if (d != 0)
+            {
+                Span<float> row = _data.AsSpan(i * n, n);
+                TensorPrimitives.Divide(row, d, row);
+            }
+        }
+    }
+
     public void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a)
     {
         int n = (int)Cols;
@@ -99,6 +139,45 @@ internal sealed class QuantMatrix : Matrix
     private byte[] _normCodes = Array.Empty<byte>();
     private bool _qnorm;
     private int _codesize;
+
+    public QuantMatrix() { }
+
+    public QuantMatrix(DenseMatrix mat, int dsub, bool qnorm)
+    {
+        Rows = mat.Rows;
+        Cols = mat.Cols;
+        _qnorm = qnorm;
+        int nsubq = (int)((Cols + dsub - 1) / dsub);
+        _codesize = (int)(Rows * nsubq);
+        _codes = new byte[_codesize];
+        _pq = new ProductQuantizer((int)Cols, dsub);
+        if (_qnorm)
+        {
+            _normCodes = new byte[Rows];
+            _npq = new ProductQuantizer(1, 1);
+        }
+        Quantize(mat);
+    }
+
+    private void QuantizeNorm(float[] norms)
+    {
+        _npq!.Train((int)Rows, norms);
+        _npq.ComputeCodes(norms, _normCodes, (int)Rows);
+    }
+
+    private void Quantize(DenseMatrix mat)
+    {
+        if (_qnorm)
+        {
+            float[] norms = new float[Rows];
+            mat.L2NormRow(norms);
+            mat.DivideRow(norms);
+            QuantizeNorm(norms);
+        }
+        float[] data = mat.RawData;
+        _pq.Train((int)Rows, data);
+        _pq.ComputeCodes(data, _codes, (int)Rows);
+    }
 
     public override float DotRow(ReadOnlySpan<float> vec, int i)
     {
