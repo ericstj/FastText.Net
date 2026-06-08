@@ -24,6 +24,7 @@ internal struct Entry
 internal sealed class Dictionary
 {
     private const int MaxLineSize = 1024;
+    private const int MaxVocabSize = 30000000;
 
     private static readonly byte[] Eos = "</s>"u8.ToArray();
     private const byte Bow = (byte)'<';
@@ -41,6 +42,8 @@ internal sealed class Dictionary
     private int _nwords;
     private int _nlabels;
     private long _ntokens;
+
+    private float[] _pdiscard = Array.Empty<float>();
 
     public Dictionary(Args args)
     {
@@ -280,18 +283,22 @@ internal sealed class Dictionary
     /// Tokenizes a line into input feature ids and label ids, mirroring fastText's
     /// supervised <c>getLine(in, words, labels)</c> used by <c>test</c>/<c>predict</c>.
     /// </summary>
-    public void GetLine(ReadOnlySpan<byte> input, List<int> words, List<int> labels)
+    public int GetLine(ReadOnlySpan<byte> input, List<int> words, List<int> labels)
     {
         words.Clear();
         labels.Clear();
         var wordHashes = new List<int>();
+        int ntokens = 0;
         int pos = 0;
         while (TryReadWord(input, ref pos, out ReadOnlySpan<byte> token))
         {
             ProcessToken(token, words, wordHashes, labels);
+            ntokens++;
         }
         ProcessToken(Eos, words, wordHashes, labels);
+        ntokens++;
         AddWordNgrams(words, wordHashes, _args.WordNgrams);
+        return ntokens;
     }
 
     private void ProcessToken(ReadOnlySpan<byte> token, List<int> words, List<int> wordHashes, List<int>? labels)
@@ -331,6 +338,208 @@ internal sealed class Dictionary
         }
         word = input.Slice(start, pos - start);
         return true;
+    }
+
+    public int[] GetSubwordsById(int id) => _words[id].Subwords;
+
+    public bool Discard(int id, float rand)
+    {
+        if (_args.Model == ModelName.Sup)
+        {
+            return false;
+        }
+        return rand > _pdiscard[id];
+    }
+
+    /// <summary>
+    /// Builds the vocabulary from a training corpus, mirroring fastText's readFromFile:
+    /// newlines are end-of-sentence tokens, rare entries are pruned by minCount, and the
+    /// discard table and subword ngrams are initialized.
+    /// </summary>
+    public void ReadFromFile(ReadOnlySpan<byte> data)
+    {
+        _word2int = new int[MaxVocabSize];
+        Array.Fill(_word2int, -1);
+        var words = new List<Entry>();
+        _size = 0;
+        _nwords = 0;
+        _nlabels = 0;
+        _ntokens = 0;
+
+        long minThreshold = 1;
+        int pos = 0;
+        while (ReadWordBuild(data, ref pos, out ReadOnlySpan<byte> token))
+        {
+            AddBuild(words, token);
+            if (_size > 0.75 * MaxVocabSize)
+            {
+                minThreshold++;
+                ThresholdBuild(words, minThreshold, minThreshold);
+            }
+        }
+        ThresholdBuild(words, _args.MinCount, _args.MinCountLabel);
+
+        _words = words.ToArray();
+        InitTableDiscard();
+        InitNgrams();
+
+        if (_size == 0)
+        {
+            throw new InvalidOperationException("Empty vocabulary. Try a smaller minCount value.");
+        }
+    }
+
+    private void AddBuild(List<Entry> words, ReadOnlySpan<byte> w)
+    {
+        int h = FindBuild(words, w, Hash(w));
+        _ntokens++;
+        if (_word2int[h] == -1)
+        {
+            words.Add(new Entry
+            {
+                Word = w.ToArray(),
+                Count = 1,
+                Type = GetType(w),
+                Subwords = Array.Empty<int>(),
+            });
+            _word2int[h] = _size++;
+        }
+        else
+        {
+            Entry e = words[_word2int[h]];
+            e.Count++;
+            words[_word2int[h]] = e;
+        }
+    }
+
+    private int FindBuild(List<Entry> words, ReadOnlySpan<byte> w, uint h)
+    {
+        int size = _word2int.Length;
+        int id = (int)(h % (uint)size);
+        while (_word2int[id] != -1 && !w.SequenceEqual(words[_word2int[id]].Word))
+        {
+            id = (id + 1) % size;
+        }
+        return id;
+    }
+
+    private void ThresholdBuild(List<Entry> words, long t, long tl)
+    {
+        words.Sort((e1, e2) =>
+            e1.Type != e2.Type
+                ? ((byte)e1.Type).CompareTo((byte)e2.Type)
+                : e2.Count.CompareTo(e1.Count));
+        words.RemoveAll(e =>
+            (e.Type == EntryType.Word && e.Count < t) ||
+            (e.Type == EntryType.Label && e.Count < tl));
+
+        _size = 0;
+        _nwords = 0;
+        _nlabels = 0;
+        Array.Fill(_word2int, -1);
+        foreach (Entry e in words)
+        {
+            int h = FindBuild(words, e.Word, Hash(e.Word));
+            _word2int[h] = _size++;
+            if (e.Type == EntryType.Word)
+            {
+                _nwords++;
+            }
+            else
+            {
+                _nlabels++;
+            }
+        }
+    }
+
+    private void InitTableDiscard()
+    {
+        _pdiscard = new float[_size];
+        for (int i = 0; i < _size; i++)
+        {
+            float f = (float)_words[i].Count / _ntokens;
+            _pdiscard[i] = (float)(Math.Sqrt(_args.T / f) + _args.T / f);
+        }
+    }
+
+    // Mirrors fastText's readWord: whitespace-delimited, with '\n' yielding the EOS token.
+    private bool ReadWordBuild(ReadOnlySpan<byte> data, ref int pos, out ReadOnlySpan<byte> word)
+    {
+        int wordStart = -1;
+        int wlen = 0;
+        while (pos < data.Length)
+        {
+            byte c = data[pos++];
+            if (IsSpace(c))
+            {
+                if (wlen == 0)
+                {
+                    if (c == (byte)'\n')
+                    {
+                        word = Eos;
+                        return true;
+                    }
+                    continue;
+                }
+                if (c == (byte)'\n')
+                {
+                    pos--;
+                }
+                word = data.Slice(wordStart, wlen);
+                return true;
+            }
+            if (wlen == 0)
+            {
+                wordStart = pos - 1;
+            }
+            wlen++;
+        }
+        if (wlen > 0)
+        {
+            word = data.Slice(wordStart, wlen);
+            return true;
+        }
+        word = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Reads one training line of word ids for the unsupervised models, applying
+    /// frequency-based subsampling (discard). Returns the number of tokens consumed.
+    /// </summary>
+    public int GetLine(ReadOnlySpan<byte> lineBytes, List<int> words, ref MinstdRand rng)
+    {
+        words.Clear();
+        int ntokens = 0;
+        int pos = 0;
+        while (TryReadWord(lineBytes, ref pos, out ReadOnlySpan<byte> token))
+        {
+            uint h = Hash(token);
+            int wid = GetId(token, h);
+            if (wid < 0)
+            {
+                continue;
+            }
+            ntokens++;
+            if (GetType(wid) == EntryType.Word && !Discard(wid, rng.NextFloat()))
+            {
+                words.Add(wid);
+            }
+            if (ntokens > MaxLineSize)
+            {
+                return ntokens;
+            }
+        }
+        int eosId = GetId(Eos);
+        if (eosId >= 0)
+        {
+            ntokens++;
+            if (!Discard(eosId, rng.NextFloat()))
+            {
+                words.Add(eosId);
+            }
+        }
+        return ntokens;
     }
 
     public void Load(BinaryReader reader)

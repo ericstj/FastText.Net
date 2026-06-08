@@ -27,6 +27,12 @@ internal sealed class Args
     public int LrUpdateRate = 100;
     public double T = 1e-4;
 
+    // Training-only arguments (not persisted in the model file).
+    public double Lr = 0.05;
+    public int MinCountLabel = 0;
+    public int Thread = 12;
+    public int Seed = 0;
+
     // Not persisted by Args.save but read separately from the model stream.
     public bool Qout;
 

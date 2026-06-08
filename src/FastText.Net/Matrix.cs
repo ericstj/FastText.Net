@@ -12,6 +12,7 @@ internal abstract class Matrix
 
     public abstract float DotRow(ReadOnlySpan<float> vec, int i);
     public abstract void AddRowToVector(Span<float> x, int i, float a);
+    public abstract void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a);
     public abstract void AverageRowsToVector(Span<float> x, List<int> rows);
     public abstract void Load(BinaryReader reader);
     public abstract void Save(BinaryWriter writer);
@@ -31,6 +32,26 @@ internal sealed class DenseMatrix : Matrix
     }
 
     public void Zero() => Array.Clear(_data);
+
+    /// <summary>
+    /// Initializes every element from U(-a, a), mirroring fastText's threaded init so the
+    /// whole matrix is covered (each of the contiguous blocks gets its own seeded stream).
+    /// </summary>
+    public void Uniform(float a, int thread, int seed)
+    {
+        long total = (long)Rows * Cols;
+        long blockSize = total / 10;
+        int blocks = Math.Max(thread, 1);
+        for (int block = 0; block < blocks; block++)
+        {
+            var rng = new MinstdRand(block + seed);
+            long end = Math.Min(total, blockSize * (block + 1));
+            for (long i = blockSize * block; i < end; i++)
+            {
+                _data[i] = -a + 2 * a * rng.NextFloat();
+            }
+        }
+    }
 
     internal float[] RawData => _data;
 
@@ -72,7 +93,7 @@ internal sealed class DenseMatrix : Matrix
         }
     }
 
-    public void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a)
+    public override void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a)
     {
         int n = (int)Cols;
         Span<float> row = _data.AsSpan(i * n, n);
@@ -190,6 +211,9 @@ internal sealed class QuantMatrix : Matrix
         float norm = _qnorm ? _npq!.GetCentroid(0, _normCodes[i]) : 1f;
         _pq.AddCode(x, _codes, i, a * norm);
     }
+
+    public override void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a) =>
+        throw new NotSupportedException("Quantized matrices cannot be updated during training.");
 
     public override void AverageRowsToVector(Span<float> x, List<int> rows)
     {

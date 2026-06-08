@@ -93,10 +93,10 @@ public sealed class FastTextModel
     {
         List<int> words = _wordsBuffer ??= new List<int>(256);
         List<Prediction> heap = _heapBuffer ??= new List<Prediction>();
-        ModelState state = _stateBuffer ??= new ModelState(_args.Dim, _model.OutputSize);
+        ModelState state = _stateBuffer ??= new ModelState(_args.Dim, _model.OutputSize, 0);
         if (state.Output.Length != _model.OutputSize)
         {
-            state = _stateBuffer = new ModelState(_args.Dim, _model.OutputSize);
+            state = _stateBuffer = new ModelState(_args.Dim, _model.OutputSize, 0);
         }
 
         _dict.GetLine(bytes, words);

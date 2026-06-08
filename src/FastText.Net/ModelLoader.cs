@@ -77,9 +77,9 @@ internal static class ModelLoader
     }
 
     public static Model BuildModel(Args args, Dictionary dict, Matrix input, Matrix output) =>
-        new(input, output, CreateLoss(args, dict, output));
+        new(input, output, CreateLoss(args, dict, output), normalizeGradient: args.Model == ModelName.Sup);
 
-    private static Loss CreateLoss(Args args, Dictionary dict, Matrix output)
+    public static Loss CreateLoss(Args args, Dictionary dict, Matrix output)
     {
         IReadOnlyList<long> Counts() => args.Model == ModelName.Sup
             ? dict.GetCounts(EntryType.Label)
@@ -88,9 +88,9 @@ internal static class ModelLoader
         return args.Loss switch
         {
             LossName.Hs => new HierarchicalSoftmaxLoss(output, Counts()),
-            LossName.Ns => new SigmoidLoss(output),
+            LossName.Ns => new NegativeSamplingLoss(output, args.Neg, Counts()),
             LossName.Softmax => new SoftmaxLoss(output),
-            LossName.Ova => new SigmoidLoss(output),
+            LossName.Ova => new OneVsAllLoss(output),
             _ => throw new InvalidDataException("Unknown loss function in model."),
         };
     }

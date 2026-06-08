@@ -15,7 +15,7 @@ public readonly record struct FastTextNgramVector(string Ngram, float[] Vector);
 /// Managed equivalent of the native fastText object, exposing the full inference surface
 /// (word/subword/sentence vectors, nearest neighbors, analogies, and prediction).
 /// </summary>
-public sealed class FastText
+public sealed partial class FastText
 {
     private const float SimilarityEpsilon = 1e-8f;
 
@@ -36,6 +36,16 @@ public sealed class FastText
         _output = m.Output;
         _model = m.Model;
         _quantized = m.Quantized;
+    }
+
+    private FastText(Args args, Dictionary dict, Matrix input, Matrix output, Model model)
+    {
+        _args = args;
+        _dict = dict;
+        _input = input;
+        _output = output;
+        _model = model;
+        _quantized = false;
     }
 
     /// <summary>Loads a model from a file path.</summary>
@@ -408,7 +418,7 @@ public sealed class FastText
         }
 
         var heap = new List<Prediction>();
-        var state = new ModelState(_args.Dim, _model.OutputSize);
+        var state = new ModelState(_args.Dim, _model.OutputSize, 0);
         _model.Predict(words, k, threshold, heap, state);
 
         var result = new FastTextPrediction[heap.Count];
@@ -441,7 +451,7 @@ public sealed class FastText
         var words = new List<int>();
         var labels = new List<int>();
         var heap = new List<Prediction>();
-        var state = new ModelState(_args.Dim, _model.OutputSize);
+        var state = new ModelState(_args.Dim, _model.OutputSize, 0);
 
         foreach (string line in lines)
         {
