@@ -73,4 +73,39 @@ internal sealed class Args
         writer.Write(LrUpdateRate);
         writer.Write(T);
     }
+
+    public static string LossToString(LossName loss) => loss switch
+    {
+        LossName.Hs => "hs",
+        LossName.Ns => "ns",
+        LossName.Softmax => "softmax",
+        LossName.Ova => "one-vs-all",
+        _ => "Unknown loss!",
+    };
+
+    public static string ModelToString(ModelName model) => model switch
+    {
+        ModelName.Cbow => "cbow",
+        ModelName.Sg => "sg",
+        ModelName.Sup => "sup",
+        _ => "Unknown model name!",
+    };
+
+    public void Dump(TextWriter o)
+    {
+        var c = System.Globalization.CultureInfo.InvariantCulture;
+        o.WriteLine($"dim {Dim}");
+        o.WriteLine($"ws {Ws}");
+        o.WriteLine($"epoch {Epoch}");
+        o.WriteLine($"minCount {MinCount}");
+        o.WriteLine($"neg {Neg}");
+        o.WriteLine($"wordNgrams {WordNgrams}");
+        o.WriteLine($"loss {LossToString(Loss)}");
+        o.WriteLine($"model {ModelToString(Model)}");
+        o.WriteLine($"bucket {Bucket}");
+        o.WriteLine($"minn {Minn}");
+        o.WriteLine($"maxn {Maxn}");
+        o.WriteLine($"lrUpdateRate {LrUpdateRate}");
+        o.WriteLine(string.Create(c, $"t {T}"));
+    }
 }

@@ -9,6 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastText.Net.Tests", "tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastText.Net.Benchmarks", "bench\FastText.Net.Benchmarks\FastText.Net.Benchmarks.csproj", "{F9259FBA-DF11-40B5-8B64-71D4D3E230AC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cli", "cli", "{342A349A-D343-8551-4064-2E2800C39E13}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastText.Net.Cli", "cli\FastText.Net.Cli\FastText.Net.Cli.csproj", "{83766BDB-389B-4431-B800-A69075480EA1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,8 +61,23 @@ Global
 		{F9259FBA-DF11-40B5-8B64-71D4D3E230AC}.Release|x64.Build.0 = Release|Any CPU
 		{F9259FBA-DF11-40B5-8B64-71D4D3E230AC}.Release|x86.ActiveCfg = Release|Any CPU
 		{F9259FBA-DF11-40B5-8B64-71D4D3E230AC}.Release|x86.Build.0 = Release|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Debug|x64.Build.0 = Debug|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Debug|x86.Build.0 = Debug|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Release|x64.ActiveCfg = Release|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Release|x64.Build.0 = Release|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Release|x86.ActiveCfg = Release|Any CPU
+		{83766BDB-389B-4431-B800-A69075480EA1}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{83766BDB-389B-4431-B800-A69075480EA1} = {342A349A-D343-8551-4064-2E2800C39E13}
 	EndGlobalSection
 EndGlobal

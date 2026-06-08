@@ -106,6 +106,26 @@ internal sealed class DenseMatrix : Matrix
         return TensorPrimitives.Dot(_data.AsSpan(i * n, n), vec);
     }
 
+    public void Dump(TextWriter o)
+    {
+        var c = System.Globalization.CultureInfo.InvariantCulture;
+        o.WriteLine(string.Create(c, $"{Rows} {Cols}"));
+        int n = (int)Cols;
+        for (long i = 0; i < Rows; i++)
+        {
+            ReadOnlySpan<float> row = _data.AsSpan((int)(i * n), n);
+            for (int j = 0; j < n; j++)
+            {
+                if (j > 0)
+                {
+                    o.Write(' ');
+                }
+                o.Write(row[j].ToString(c));
+            }
+            o.WriteLine();
+        }
+    }
+
     public override void AddRowToVector(Span<float> x, int i, float a)
     {
         int n = (int)Cols;

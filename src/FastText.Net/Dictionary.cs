@@ -590,6 +590,17 @@ internal sealed class Dictionary
 
     public int EosId => GetId(Eos);
 
+    public void Dump(TextWriter o)
+    {
+        o.WriteLine(_size);
+        for (int i = 0; i < _size; i++)
+        {
+            Entry e = _words[i];
+            string type = e.Type == EntryType.Label ? "label" : "word";
+            o.WriteLine($"{Encoding.UTF8.GetString(e.Word)} {e.Count} {type}");
+        }
+    }
+
     /// <summary>
     /// Prunes the dictionary to the given input-matrix row indices, mirroring fastText's
     /// quantization cutoff. Rewrites <paramref name="idx"/> in place to the retained rows

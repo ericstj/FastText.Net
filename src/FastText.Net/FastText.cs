@@ -151,6 +151,50 @@ public sealed partial class FastText
     /// <summary>Embedding dimension of the model.</summary>
     public int Dimension => _args.Dim;
 
+    /// <summary>Section of a model to write with <see cref="Dump"/>.</summary>
+    public enum DumpOption
+    {
+        /// <summary>Training/model arguments.</summary>
+        Args,
+        /// <summary>Dictionary entries (word, count, type).</summary>
+        Dict,
+        /// <summary>Input (embedding) matrix. Not supported for quantized models.</summary>
+        Input,
+        /// <summary>Output matrix. Not supported for quantized models.</summary>
+        Output,
+    }
+
+    /// <summary>Writes a model section in fastText's text <c>dump</c> format.</summary>
+    public void Dump(TextWriter writer, DumpOption option)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        switch (option)
+        {
+            case DumpOption.Args:
+                _args.Dump(writer);
+                break;
+            case DumpOption.Dict:
+                _dict.Dump(writer);
+                break;
+            case DumpOption.Input:
+                if (_input is not DenseMatrix input)
+                {
+                    throw new InvalidOperationException("Not supported for quantized models.");
+                }
+                input.Dump(writer);
+                break;
+            case DumpOption.Output:
+                if (_output is not DenseMatrix output)
+                {
+                    throw new InvalidOperationException("Not supported for quantized models.");
+                }
+                output.Dump(writer);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(option));
+        }
+    }
+
     /// <summary>True if the model uses product quantization (a <c>.ftz</c> model).</summary>
     public bool IsQuantized => _quantized;
 
