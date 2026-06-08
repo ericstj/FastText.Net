@@ -34,8 +34,9 @@ internal sealed class DenseMatrix : Matrix
     public void Zero() => Array.Clear(_data);
 
     /// <summary>
-    /// Initializes every element from U(-a, a), mirroring fastText's threaded init so the
-    /// whole matrix is covered (each of the contiguous blocks gets its own seeded stream).
+    /// Initializes every element from U(-a, a), faithfully mirroring fastText's threaded
+    /// init: blocks are sized at total/10, so the default 12 threads cover the whole matrix
+    /// while fewer than 10 threads leave a tail uninitialized, exactly as upstream does.
     /// </summary>
     public void Uniform(float a, int thread, int seed)
     {

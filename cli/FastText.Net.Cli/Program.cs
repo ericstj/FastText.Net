@@ -354,6 +354,8 @@ internal static class Program
         if (args.Length is < 2 or > 3)
         {
             Console.Error.WriteLine("usage: fasttext nn <model> <k>");
+            Console.Error.WriteLine("  <model>      model filename");
+            Console.Error.WriteLine("  <k>          (optional; 10 by default) predict top k labels");
             return 1;
         }
         int k = args.Length == 3 ? int.Parse(args[2], Inv) : 10;
@@ -378,6 +380,8 @@ internal static class Program
         if (args.Length is < 2 or > 3)
         {
             Console.Error.WriteLine("usage: fasttext analogies <model> <k>");
+            Console.Error.WriteLine("  <model>      model filename");
+            Console.Error.WriteLine("  <k>          (optional; 10 by default) predict top k labels");
             return 1;
         }
         int k = args.Length == 3 ? int.Parse(args[2], Inv) : 10;

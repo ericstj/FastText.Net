@@ -19,7 +19,8 @@ internal static class ModelLoader
     private const int SupportedVersion = 12;
 
     public static LoadedModel Load(Stream stream)
-    {        using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
+    {
+        using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
 
         int magic = reader.ReadInt32();
         if (magic != MagicInt32)
