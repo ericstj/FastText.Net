@@ -17,9 +17,9 @@
 
   <PropertyGroup Label="Packaging">
     <PackageId>FastText.Net</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
     <EnablePackageValidation>true</EnablePackageValidation>
-    <PackageValidationBaselineVersion>0.1.0</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion>0.1.1</PackageValidationBaselineVersion>
     <Authors>ericstj</Authors>
     <Description>Managed, dependency-free port of Facebook fastText inference for text/language classification. Loads pretrained supervised models (e.g. lid.176.ftz) and predicts without any native dependency.</Description>
     <PackageTags>fasttext;language-detection;language-identification;nlp;text-classification;machine-learning</PackageTags>

@@ -15,7 +15,7 @@
 
   <PropertyGroup Label="Packaging">
     <PackageId>FastText.Net.Cli</PackageId>
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
     <Authors>ericstj</Authors>
     <Description>Managed command-line port of Facebook fastText with no native dependency. Train, evaluate, quantize, and query text-classification and word-embedding models from the terminal.</Description>
     <PackageTags>fasttext;cli;dotnet-tool;language-detection;nlp;text-classification;machine-learning</PackageTags>
