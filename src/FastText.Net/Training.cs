@@ -70,6 +70,44 @@ public sealed class FastTextTrainArgs
     /// <summary>Label prefix that distinguishes labels from words in the corpus.</summary>
     public string Label { get; set; } = "__label__";
 
+    /// <summary>
+    /// Names of hyper-parameters pinned to their current value so autotune leaves them
+    /// untouched. Recognized names: epoch, lr, dim, wordNgrams, minn, maxn, bucket, dsub, loss.
+    /// </summary>
+    public HashSet<string> PinnedArgs { get; } = new(StringComparer.Ordinal);
+
+    internal FastTextTrainArgs Clone()
+    {
+        var copy = new FastTextTrainArgs
+        {
+            Model = Model,
+            Loss = Loss,
+            Dim = Dim,
+            Lr = Lr,
+            LrUpdateRate = LrUpdateRate,
+            Ws = Ws,
+            Epoch = Epoch,
+            MinCount = MinCount,
+            MinCountLabel = MinCountLabel,
+            Neg = Neg,
+            WordNgrams = WordNgrams,
+            Bucket = Bucket,
+            Minn = Minn,
+            Maxn = Maxn,
+            T = T,
+            Seed = Seed,
+            Thread = Thread,
+            Label = Label,
+        };
+        foreach (string pinned in PinnedArgs)
+        {
+            copy.PinnedArgs.Add(pinned);
+        }
+        return copy;
+    }
+
+    internal bool IsManual(string name) => PinnedArgs.Contains(name);
+
     /// <summary>Defaults matching fastText's <c>train_supervised</c>.</summary>
     public static FastTextTrainArgs ForSupervised() => new()
     {

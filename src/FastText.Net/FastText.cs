@@ -158,6 +158,46 @@ public sealed partial class FastText
     public bool IsSupervised => _args.Model == ModelName.Sup;
 
     /// <summary>
+    /// Returns the output-matrix index for a label string, or -1 if the label is unknown.
+    /// Mirrors fastText's <c>getLabelId</c>.
+    /// </summary>
+    public int GetLabelId(string label)
+    {
+        ArgumentNullException.ThrowIfNull(label);
+        int id = _dict.GetId(System.Text.Encoding.UTF8.GetBytes(label));
+        return id == -1 ? -1 : id - _dict.NWords;
+    }
+
+    // Quantizes in place to satisfy an autotune model-size budget, mirroring Autotune::quantize.
+    // Returns false when the size constraint provably cannot be met (cutoff hits the floor).
+    internal bool TryQuantizeForSize(int dsub, long targetFileSize)
+    {
+        const int cutoffLimit = 256;
+        long outM = _output.Rows;
+        long outN = _output.Cols;
+        long dim = _input.Cols;
+
+        bool qnorm = true;
+        bool qout = outM >= cutoffLimit;
+
+        long outModelSize = qout
+            ? 21 + outM * ((outN + 2 - 1) / 2) + (16 + 4 * (outN * (1 << 8))) + outM
+            : 16 + 4 * (outM * outN);
+
+        long target = targetFileSize - 107 - 4 * (1 << 8) * dim - outModelSize;
+        long denom = (dim + dsub - 1) / dsub + 1 + 10;
+        int cutoff = (int)Math.Max(target / denom, cutoffLimit);
+
+        if (cutoff == cutoffLimit)
+        {
+            return false;
+        }
+
+        Quantize(dsub, qnorm, cutoff, qout);
+        return true;
+    }
+
+    /// <summary>
     /// Compresses a supervised model with product quantization, mirroring fastText's
     /// <c>quantize</c>. <paramref name="cutoff"/> optionally prunes the vocabulary to the
     /// highest-norm embeddings first. Retraining after pruning is not yet supported.

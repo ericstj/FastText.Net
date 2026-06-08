@@ -103,6 +103,134 @@ public sealed class Meter
         return new FastTextMetrics(lm.Precision(), lm.Recall(), lm.F1Score());
     }
 
+    private const int AllLabels = -1;
+    private const float FalseNegativeScore = -1.0f;
+
+    /// <summary>Highest precision achievable at or above the requested recall (all labels).</summary>
+    public double PrecisionAtRecall(double recallQuery) => PrecisionAtRecall(AllLabels, recallQuery);
+
+    /// <summary>Highest precision achievable at or above the requested recall for one label.</summary>
+    public double PrecisionAtRecall(int labelId, double recallQuery)
+    {
+        double best = 0.0;
+        foreach ((double precision, double recall) in PrecisionRecallCurve(labelId))
+        {
+            if (recall >= recallQuery)
+            {
+                best = Math.Max(best, precision);
+            }
+        }
+        return best;
+    }
+
+    /// <summary>Highest recall achievable at or above the requested precision (all labels).</summary>
+    public double RecallAtPrecision(double precisionQuery) => RecallAtPrecision(AllLabels, precisionQuery);
+
+    /// <summary>Highest recall achievable at or above the requested precision for one label.</summary>
+    public double RecallAtPrecision(int labelId, double precisionQuery)
+    {
+        double best = 0.0;
+        foreach ((double precision, double recall) in PrecisionRecallCurve(labelId))
+        {
+            if (precision >= precisionQuery)
+            {
+                best = Math.Max(best, recall);
+            }
+        }
+        return best;
+    }
+
+    private List<(ulong TruePositives, ulong FalsePositives)> GetPositiveCounts(int labelId)
+    {
+        var counts = new List<(ulong, ulong)>();
+        List<(float Score, float Gold)> v = ScoreVsTrue(labelId);
+        ulong truePositives = 0;
+        ulong falsePositives = 0;
+        double lastScore = FalseNegativeScore - 1.0;
+
+        for (int i = v.Count - 1; i >= 0; i--)
+        {
+            double score = v[i].Score;
+            double gold = v[i].Gold;
+            if (score < 0)
+            {
+                break;
+            }
+            if (gold == 1.0)
+            {
+                truePositives++;
+            }
+            else
+            {
+                falsePositives++;
+            }
+            if (score == lastScore && counts.Count > 0)
+            {
+                counts[^1] = (truePositives, falsePositives);
+            }
+            else
+            {
+                counts.Add((truePositives, falsePositives));
+            }
+            lastScore = score;
+        }
+        return counts;
+    }
+
+    private List<(double Precision, double Recall)> PrecisionRecallCurve(int labelId)
+    {
+        var curve = new List<(double, double)>();
+        List<(ulong TruePositives, ulong FalsePositives)> positiveCounts = GetPositiveCounts(labelId);
+        if (positiveCounts.Count == 0)
+        {
+            return curve;
+        }
+
+        ulong golds = labelId == AllLabels ? _metrics.Gold : GetLabel(labelId).Gold;
+
+        // First entry whose truePositives reaches the gold count, inclusive.
+        int fullRecall = positiveCounts.Count;
+        for (int i = 0; i < positiveCounts.Count; i++)
+        {
+            if (positiveCounts[i].TruePositives >= golds)
+            {
+                fullRecall = Math.Min(positiveCounts.Count, i + 1);
+                break;
+            }
+        }
+
+        for (int i = 0; i < fullRecall; i++)
+        {
+            double truePositives = positiveCounts[i].TruePositives;
+            double falsePositives = positiveCounts[i].FalsePositives;
+            double precision = truePositives + falsePositives != 0.0
+                ? truePositives / (truePositives + falsePositives)
+                : 0.0;
+            double recall = golds != 0 ? truePositives / golds : double.NaN;
+            curve.Add((precision, recall));
+        }
+        curve.Add((1.0, 0.0));
+        return curve;
+    }
+
+    private List<(float Score, float Gold)> ScoreVsTrue(int labelId)
+    {
+        var ret = new List<(float, float)>();
+        if (labelId == AllLabels)
+        {
+            foreach (LabelMetrics lm in _labelMetrics.Values)
+            {
+                ret.AddRange(lm.ScoreVsTrue);
+            }
+        }
+        else if (_labelMetrics.TryGetValue(labelId, out LabelMetrics? lm))
+        {
+            ret.AddRange(lm.ScoreVsTrue);
+        }
+        ret.Sort((a, b) => a.Item1 != b.Item1 ? a.Item1.CompareTo(b.Item1) : a.Item2.CompareTo(b.Item2));
+        return ret;
+    }
+
     private LabelMetrics GetLabel(int labelId)
     {
         if (!_labelMetrics.TryGetValue(labelId, out LabelMetrics? lm))
