@@ -623,7 +623,7 @@ public sealed partial class FastText
             queryNorm = 1f;
         }
 
-        var results = new List<FastTextNeighbor>(_dict.NWords);
+        var heap = new PriorityQueue<FastTextNeighbor, FastTextNeighbor>(NeighborWorstFirst.Instance);
         for (int i = 0; i < _dict.NWords; i++)
         {
             string word = _dict.GetWord(i);
@@ -632,20 +632,32 @@ public sealed partial class FastText
                 continue;
             }
             float dp = wordVectors.DotRow(query.Data, i);
-            results.Add(new FastTextNeighbor(word, dp / queryNorm));
+            var neighbor = new FastTextNeighbor(word, dp / queryNorm);
+            heap.Enqueue(neighbor, neighbor);
+            if (heap.Count > k)
+            {
+                heap.Dequeue();
+            }
         }
 
-        results.Sort(static (x, y) =>
+        var results = new List<FastTextNeighbor>(heap.Count);
+        while (heap.Count > 0)
         {
-            int cmp = y.Similarity.CompareTo(x.Similarity);
-            return cmp != 0 ? cmp : string.CompareOrdinal(x.Word, y.Word);
-        });
-
-        if (results.Count > k)
-        {
-            results.RemoveRange(k, results.Count - k);
+            results.Add(heap.Dequeue());
         }
+        results.Reverse();
         return results;
+    }
+
+    private sealed class NeighborWorstFirst : IComparer<FastTextNeighbor>
+    {
+        public static readonly NeighborWorstFirst Instance = new();
+
+        public int Compare(FastTextNeighbor x, FastTextNeighbor y)
+        {
+            int cmp = x.Similarity.CompareTo(y.Similarity);
+            return cmp != 0 ? cmp : string.CompareOrdinal(y.Word, x.Word);
+        }
     }
 
     private static IEnumerable<string> Tokenize(string text)
