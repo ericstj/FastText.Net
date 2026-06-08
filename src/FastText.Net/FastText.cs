@@ -260,16 +260,16 @@ public sealed partial class FastText
         {
             throw new InvalidOperationException("Quantization requires a dense (non-quantized) model.");
         }
+        if (retrain)
+        {
+            throw new NotSupportedException("Retraining during quantization is not yet supported.");
+        }
 
         _args.Qout = qout;
         int dim = _args.Dim;
 
         if (cutoff > 0 && cutoff < input.Rows)
         {
-            if (retrain)
-            {
-                throw new NotSupportedException("Retraining during quantization is not yet supported.");
-            }
             List<int> idx = SelectEmbeddings(input, cutoff);
             _dict.Prune(idx);
             var ninput = new DenseMatrix(idx.Count, dim);

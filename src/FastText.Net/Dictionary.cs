@@ -95,8 +95,14 @@ internal sealed class Dictionary
         }
     }
 
-    public int GetSubwordId(ReadOnlySpan<byte> subword) =>
-        _nwords + (int)(Hash(subword) % (uint)_args.Bucket);
+    public int GetSubwordId(ReadOnlySpan<byte> subword)
+    {
+        if (_args.Bucket == 0)
+        {
+            throw new InvalidOperationException("Model has no subword buckets (bucket == 0).");
+        }
+        return _nwords + (int)(Hash(subword) % (uint)_args.Bucket);
+    }
 
     private static byte[] Bracket(ReadOnlySpan<byte> word)
     {
@@ -376,6 +382,10 @@ internal sealed class Dictionary
                 minThreshold++;
                 ThresholdBuild(words, minThreshold, minThreshold);
             }
+        }
+        if (data.Length > 0 && data[^1] != (byte)'\n')
+        {
+            AddBuild(words, Eos);
         }
         ThresholdBuild(words, _args.MinCount, _args.MinCountLabel);
 

@@ -109,10 +109,8 @@ public sealed class QuantizationTests
     }
 
     [Fact]
-    public void QuantizeRejectsUnsupervisedModels()
+    public void QuantizeRejectsAlreadyQuantizedModels()
     {
-        // The synthetic models are all supervised; a quantized model cannot be
-        // re-quantized, which exercises the same guard path.
         FT quant = FT.LoadModel(SyntheticPath("softmax.bin"));
         quant.Quantize();
         Assert.Throws<InvalidOperationException>(() => quant.Quantize());
