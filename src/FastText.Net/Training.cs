@@ -73,6 +73,8 @@ public sealed class FastTextTrainArgs
     /// <summary>
     /// Names of hyper-parameters pinned to their current value so autotune leaves them
     /// untouched. Recognized names: epoch, lr, dim, wordNgrams, minn, maxn, bucket, dsub, loss.
+    /// Note that, as in upstream fastText, autotune forces <c>loss</c> to softmax unless it is
+    /// pinned here; it is never otherwise varied.
     /// </summary>
     public HashSet<string> PinnedArgs { get; } = new(StringComparer.Ordinal);
 
@@ -289,10 +291,12 @@ public sealed partial class FastText
     private static void Skipgram(
         Model model, Dictionary dict, Args args, ModelState state, float lr, List<int> line)
     {
+        var ngrams = new List<int>();
         for (int w = 0; w < line.Count; w++)
         {
             int boundary = state.Rng.NextInt(1, args.Ws);
-            var ngrams = new List<int>(dict.GetSubwordsById(line[w]));
+            ngrams.Clear();
+            ngrams.AddRange(dict.GetSubwordsById(line[w]));
             for (int c = -boundary; c <= boundary; c++)
             {
                 if (c != 0 && w + c >= 0 && w + c < line.Count)

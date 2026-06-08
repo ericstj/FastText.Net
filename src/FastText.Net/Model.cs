@@ -282,9 +282,10 @@ internal sealed class OneVsAllLoss : BinaryLogisticLoss
     {
         float loss = 0f;
         int osz = state.Output.Length;
+        var targetSet = new HashSet<int>(targets);
         for (int i = 0; i < osz; i++)
         {
-            bool isMatch = targets.Contains(i);
+            bool isMatch = targetSet.Contains(i);
             loss += BinaryLogistic(i, state, isMatch, lr, backprop);
         }
         return loss;
