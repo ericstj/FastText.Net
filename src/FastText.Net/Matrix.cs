@@ -12,18 +12,120 @@ internal abstract class Matrix
 
     public abstract float DotRow(ReadOnlySpan<float> vec, int i);
     public abstract void AddRowToVector(Span<float> x, int i, float a);
+    public abstract void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a);
     public abstract void AverageRowsToVector(Span<float> x, List<int> rows);
     public abstract void Load(BinaryReader reader);
+    public abstract void Save(BinaryWriter writer);
 }
 
 internal sealed class DenseMatrix : Matrix
 {
     private float[] _data = Array.Empty<float>();
 
+    public DenseMatrix() { }
+
+    public DenseMatrix(long rows, long cols)
+    {
+        Rows = rows;
+        Cols = cols;
+        _data = new float[checked(rows * cols)];
+    }
+
+    public void Zero() => Array.Clear(_data);
+
+    /// <summary>
+    /// Initializes every element from U(-a, a) using fastText's per-block seeded RNG, but
+    /// tiles the matrix across <paramref name="thread"/> blocks so the whole matrix is
+    /// covered for any thread count (upstream's fixed total/10 sizing leaves a tail
+    /// uninitialized when thread &lt; 10).
+    /// </summary>
+    public void Uniform(float a, int thread, int seed)
+    {
+        long total = (long)Rows * Cols;
+        int blocks = Math.Max(thread, 1);
+        long blockSize = (total + blocks - 1) / blocks;
+        for (int block = 0; block < blocks; block++)
+        {
+            var rng = new MinstdRand(block + seed);
+            long end = Math.Min(total, blockSize * (block + 1));
+            for (long i = blockSize * block; i < end; i++)
+            {
+                _data[i] = -a + 2 * a * rng.NextFloat();
+            }
+        }
+    }
+
+    internal float[] RawData => _data;
+
+    public float L2NormRow(int i)
+    {
+        int n = (int)Cols;
+        double norm = 0;
+        ReadOnlySpan<float> row = _data.AsSpan(i * n, n);
+        for (int j = 0; j < n; j++)
+        {
+            norm += (double)row[j] * row[j];
+        }
+        if (double.IsNaN(norm))
+        {
+            throw new InvalidOperationException("Encountered NaN computing row norm.");
+        }
+        return (float)Math.Sqrt(norm);
+    }
+
+    public void L2NormRow(Span<float> norms)
+    {
+        for (int i = 0; i < Rows; i++)
+        {
+            norms[i] = L2NormRow(i);
+        }
+    }
+
+    public void DivideRow(ReadOnlySpan<float> denoms)
+    {
+        int n = (int)Cols;
+        for (int i = 0; i < Rows; i++)
+        {
+            float d = denoms[i];
+            if (d != 0)
+            {
+                Span<float> row = _data.AsSpan(i * n, n);
+                TensorPrimitives.Divide(row, d, row);
+            }
+        }
+    }
+
+    public override void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a)
+    {
+        int n = (int)Cols;
+        Span<float> row = _data.AsSpan(i * n, n);
+        TensorPrimitives.MultiplyAdd(vec, a, row, row);
+    }
+
     public override float DotRow(ReadOnlySpan<float> vec, int i)
     {
         int n = (int)Cols;
         return TensorPrimitives.Dot(_data.AsSpan(i * n, n), vec);
+    }
+
+    public void Dump(TextWriter o)
+    {
+        var c = System.Globalization.CultureInfo.InvariantCulture;
+        o.WriteLine(string.Create(c, $"{Rows} {Cols}"));
+        int n = (int)Cols;
+        for (long i = 0; i < Rows; i++)
+        {
+            ReadOnlySpan<float> row = _data.AsSpan((int)(i * n), n);
+            for (int j = 0; j < n; j++)
+            {
+                if (j > 0)
+                {
+                    o.Write(' ');
+                }
+                o.Write(row[j].ToString(c));
+            }
+            o.WriteLine();
+        }
     }
 
     public override void AddRowToVector(Span<float> x, int i, float a)
@@ -61,6 +163,15 @@ internal sealed class DenseMatrix : Matrix
         byte[] bytes = reader.ReadBytes(checked((int)(count * sizeof(float))));
         Buffer.BlockCopy(bytes, 0, _data, 0, bytes.Length);
     }
+
+    public override void Save(BinaryWriter writer)
+    {
+        writer.Write(Rows);
+        writer.Write(Cols);
+        byte[] bytes = new byte[checked(_data.Length * sizeof(float))];
+        Buffer.BlockCopy(_data, 0, bytes, 0, bytes.Length);
+        writer.Write(bytes);
+    }
 }
 
 internal sealed class QuantMatrix : Matrix
@@ -71,6 +182,45 @@ internal sealed class QuantMatrix : Matrix
     private byte[] _normCodes = Array.Empty<byte>();
     private bool _qnorm;
     private int _codesize;
+
+    public QuantMatrix() { }
+
+    public QuantMatrix(DenseMatrix mat, int dsub, bool qnorm)
+    {
+        Rows = mat.Rows;
+        Cols = mat.Cols;
+        _qnorm = qnorm;
+        int nsubq = (int)((Cols + dsub - 1) / dsub);
+        _codesize = checked((int)(Rows * nsubq));
+        _codes = new byte[_codesize];
+        _pq = new ProductQuantizer((int)Cols, dsub);
+        if (_qnorm)
+        {
+            _normCodes = new byte[Rows];
+            _npq = new ProductQuantizer(1, 1);
+        }
+        Quantize(mat);
+    }
+
+    private void QuantizeNorm(float[] norms)
+    {
+        _npq!.Train((int)Rows, norms);
+        _npq.ComputeCodes(norms, _normCodes, (int)Rows);
+    }
+
+    private void Quantize(DenseMatrix mat)
+    {
+        if (_qnorm)
+        {
+            float[] norms = new float[Rows];
+            mat.L2NormRow(norms);
+            mat.DivideRow(norms);
+            QuantizeNorm(norms);
+        }
+        float[] data = mat.RawData;
+        _pq.Train((int)Rows, data);
+        _pq.ComputeCodes(data, _codes, (int)Rows);
+    }
 
     public override float DotRow(ReadOnlySpan<float> vec, int i)
     {
@@ -83,6 +233,9 @@ internal sealed class QuantMatrix : Matrix
         float norm = _qnorm ? _npq!.GetCentroid(0, _normCodes[i]) : 1f;
         _pq.AddCode(x, _codes, i, a * norm);
     }
+
+    public override void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a) =>
+        throw new NotSupportedException("Quantized matrices cannot be updated during training.");
 
     public override void AverageRowsToVector(Span<float> x, List<int> rows)
     {
@@ -112,6 +265,21 @@ internal sealed class QuantMatrix : Matrix
             _normCodes = reader.ReadBytes((int)Rows);
             _npq = new ProductQuantizer();
             _npq.Load(reader);
+        }
+    }
+
+    public override void Save(BinaryWriter writer)
+    {
+        writer.Write(_qnorm);
+        writer.Write(Rows);
+        writer.Write(Cols);
+        writer.Write(_codesize);
+        writer.Write(_codes);
+        _pq.Save(writer);
+        if (_qnorm)
+        {
+            writer.Write(_normCodes);
+            _npq!.Save(writer);
         }
     }
 }

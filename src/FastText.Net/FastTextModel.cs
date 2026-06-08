@@ -17,9 +17,6 @@ public readonly record struct FastTextPrediction(string Label, float Probability
 /// <remarks>Instances are immutable after loading and safe to share across threads.</remarks>
 public sealed class FastTextModel
 {
-    private const int MagicInt32 = 793712314;
-    private const int SupportedVersion = 12;
-
     private readonly Args _args;
     private readonly Dictionary _dict;
     private readonly Model _model;
@@ -57,64 +54,8 @@ public sealed class FastTextModel
     /// <summary>Loads a model from a stream.</summary>
     public static FastTextModel Load(Stream stream)
     {
-        using var reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
-
-        int magic = reader.ReadInt32();
-        if (magic != MagicInt32)
-        {
-            throw new InvalidDataException("Not a fastText model file (bad magic number).");
-        }
-        int version = reader.ReadInt32();
-        if (version > SupportedVersion)
-        {
-            throw new InvalidDataException(
-                $"Unsupported fastText model version {version} (supported up to {SupportedVersion}).");
-        }
-
-        var args = new Args();
-        args.Load(reader);
-        if (version == 11 && args.Model == ModelName.Sup)
-        {
-            args.Maxn = 0;
-        }
-
-        var dict = new Dictionary(args);
-        dict.Load(reader);
-
-        bool quantInput = reader.ReadBoolean();
-        Matrix input = quantInput ? new QuantMatrix() : new DenseMatrix();
-        input.Load(reader);
-
-        if (!quantInput && dict.IsPruned)
-        {
-            throw new InvalidDataException(
-                "Invalid model file: pruned dictionary without quantized input. " +
-                "Please download an updated model from fasttext.cc.");
-        }
-
-        args.Qout = reader.ReadBoolean();
-        Matrix output = quantInput && args.Qout ? new QuantMatrix() : new DenseMatrix();
-        output.Load(reader);
-
-        Loss loss = CreateLoss(args, dict, output);
-        var model = new Model(input, output, loss);
-        return new FastTextModel(args, dict, model, quantInput);
-    }
-
-    private static Loss CreateLoss(Args args, Dictionary dict, Matrix output)
-    {
-        IReadOnlyList<long> Counts() => args.Model == ModelName.Sup
-            ? dict.GetCounts(EntryType.Label)
-            : dict.GetCounts(EntryType.Word);
-
-        return args.Loss switch
-        {
-            LossName.Hs => new HierarchicalSoftmaxLoss(output, Counts()),
-            LossName.Ns => new SigmoidLoss(output),
-            LossName.Softmax => new SoftmaxLoss(output),
-            LossName.Ova => new SigmoidLoss(output),
-            _ => throw new InvalidDataException("Unknown loss function in model."),
-        };
+        LoadedModel m = ModelLoader.Load(stream);
+        return new FastTextModel(m.Args, m.Dict, m.Model, m.Quantized);
     }
 
     /// <summary>
@@ -152,10 +93,10 @@ public sealed class FastTextModel
     {
         List<int> words = _wordsBuffer ??= new List<int>(256);
         List<Prediction> heap = _heapBuffer ??= new List<Prediction>();
-        ModelState state = _stateBuffer ??= new ModelState(_args.Dim, _model.OutputSize);
+        ModelState state = _stateBuffer ??= new ModelState(_args.Dim, _model.OutputSize, 0);
         if (state.Output.Length != _model.OutputSize)
         {
-            state = _stateBuffer = new ModelState(_args.Dim, _model.OutputSize);
+            state = _stateBuffer = new ModelState(_args.Dim, _model.OutputSize, 0);
         }
 
         _dict.GetLine(bytes, words);

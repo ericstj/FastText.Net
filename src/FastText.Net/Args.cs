@@ -27,6 +27,12 @@ internal sealed class Args
     public int LrUpdateRate = 100;
     public double T = 1e-4;
 
+    // Training-only arguments (not persisted in the model file).
+    public double Lr = 0.05;
+    public int MinCountLabel = 0;
+    public int Thread = 12;
+    public int Seed = 0;
+
     // Not persisted by Args.save but read separately from the model stream.
     public bool Qout;
 
@@ -49,5 +55,57 @@ internal sealed class Args
         Maxn = reader.ReadInt32();
         LrUpdateRate = reader.ReadInt32();
         T = reader.ReadDouble();
+    }
+
+    public void Save(BinaryWriter writer)
+    {
+        writer.Write(Dim);
+        writer.Write(Ws);
+        writer.Write(Epoch);
+        writer.Write(MinCount);
+        writer.Write(Neg);
+        writer.Write(WordNgrams);
+        writer.Write((int)Loss);
+        writer.Write((int)Model);
+        writer.Write(Bucket);
+        writer.Write(Minn);
+        writer.Write(Maxn);
+        writer.Write(LrUpdateRate);
+        writer.Write(T);
+    }
+
+    public static string LossToString(LossName loss) => loss switch
+    {
+        LossName.Hs => "hs",
+        LossName.Ns => "ns",
+        LossName.Softmax => "softmax",
+        LossName.Ova => "one-vs-all",
+        _ => "Unknown loss!",
+    };
+
+    public static string ModelToString(ModelName model) => model switch
+    {
+        ModelName.Cbow => "cbow",
+        ModelName.Sg => "sg",
+        ModelName.Sup => "sup",
+        _ => "Unknown model name!",
+    };
+
+    public void Dump(TextWriter o)
+    {
+        var c = System.Globalization.CultureInfo.InvariantCulture;
+        o.WriteLine($"dim {Dim}");
+        o.WriteLine($"ws {Ws}");
+        o.WriteLine($"epoch {Epoch}");
+        o.WriteLine($"minCount {MinCount}");
+        o.WriteLine($"neg {Neg}");
+        o.WriteLine($"wordNgrams {WordNgrams}");
+        o.WriteLine($"loss {LossToString(Loss)}");
+        o.WriteLine($"model {ModelToString(Model)}");
+        o.WriteLine($"bucket {Bucket}");
+        o.WriteLine($"minn {Minn}");
+        o.WriteLine($"maxn {Maxn}");
+        o.WriteLine($"lrUpdateRate {LrUpdateRate}");
+        o.WriteLine(string.Create(c, $"t {T}"));
     }
 }
