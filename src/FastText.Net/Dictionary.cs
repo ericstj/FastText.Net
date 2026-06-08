@@ -50,8 +50,60 @@ internal sealed class Dictionary
 
     public int NWords => _nwords;
     public int NLabels => _nlabels;
+    public long NTokens => _ntokens;
 
     public bool IsPruned => _pruneIdxSize >= 0;
+
+    public EntryType GetEntryType(int id) => _words[id].Type;
+
+    public string GetWord(int id) => Encoding.UTF8.GetString(_words[id].Word);
+
+    public byte[] GetWordBytes(int id) => _words[id].Word;
+
+    /// <summary>Subword ids for an arbitrary word (BOW/EOW bracketed), mirroring fastText.</summary>
+    public List<int> GetSubwords(ReadOnlySpan<byte> word)
+    {
+        int i = GetId(word);
+        var ngrams = new List<int>();
+        if (i >= 0)
+        {
+            return new List<int>(_words[i].Subwords);
+        }
+        if (!word.SequenceEqual(Eos))
+        {
+            ComputeSubwords(Bracket(word), ngrams);
+        }
+        return ngrams;
+    }
+
+    public void GetSubwords(ReadOnlySpan<byte> word, List<int> ngrams, List<string> substrings)
+    {
+        int i = GetId(word);
+        ngrams.Clear();
+        substrings.Clear();
+        if (i >= 0)
+        {
+            ngrams.Add(i);
+            substrings.Add(Encoding.UTF8.GetString(_words[i].Word));
+        }
+        if (!word.SequenceEqual(Eos))
+        {
+            ComputeSubwords(Bracket(word), ngrams, substrings);
+        }
+    }
+
+    public int GetSubwordId(ReadOnlySpan<byte> subword) =>
+        _nwords + (int)(Hash(subword) % (uint)_args.Bucket);
+
+    private static byte[] Bracket(ReadOnlySpan<byte> word)
+    {
+        byte[] bracketed = new byte[word.Length + 2];
+        bracketed[0] = Bow;
+        word.CopyTo(bracketed.AsSpan(1));
+        bracketed[^1] = Eow;
+        return bracketed;
+    }
+
 
     public IReadOnlyList<long> GetCounts(EntryType type)
     {
@@ -112,7 +164,7 @@ internal sealed class Dictionary
         return Encoding.UTF8.GetString(_words[lid + _nwords].Word);
     }
 
-    private void ComputeSubwords(ReadOnlySpan<byte> word, List<int> ngrams)
+    private void ComputeSubwords(ReadOnlySpan<byte> word, List<int> ngrams, List<string>? substrings = null)
     {
         int n = word.Length;
         int minn = _args.Minn, maxn = _args.Maxn, bucket = _args.Bucket;
@@ -134,6 +186,7 @@ internal sealed class Dictionary
                 {
                     int hh = (int)(Hash(word.Slice(i, j - i)) % (uint)bucket);
                     PushHash(ngrams, hh);
+                    substrings?.Add(Encoding.UTF8.GetString(word.Slice(i, j - i)));
                 }
             }
         }
@@ -217,13 +270,31 @@ internal sealed class Dictionary
         int pos = 0;
         while (TryReadWord(input, ref pos, out ReadOnlySpan<byte> token))
         {
-            ProcessToken(token, words, wordHashes);
+            ProcessToken(token, words, wordHashes, null);
         }
-        ProcessToken(Eos, words, wordHashes);
+        ProcessToken(Eos, words, wordHashes, null);
         AddWordNgrams(words, wordHashes, _args.WordNgrams);
     }
 
-    private void ProcessToken(ReadOnlySpan<byte> token, List<int> words, List<int> wordHashes)
+    /// <summary>
+    /// Tokenizes a line into input feature ids and label ids, mirroring fastText's
+    /// supervised <c>getLine(in, words, labels)</c> used by <c>test</c>/<c>predict</c>.
+    /// </summary>
+    public void GetLine(ReadOnlySpan<byte> input, List<int> words, List<int> labels)
+    {
+        words.Clear();
+        labels.Clear();
+        var wordHashes = new List<int>();
+        int pos = 0;
+        while (TryReadWord(input, ref pos, out ReadOnlySpan<byte> token))
+        {
+            ProcessToken(token, words, wordHashes, labels);
+        }
+        ProcessToken(Eos, words, wordHashes, labels);
+        AddWordNgrams(words, wordHashes, _args.WordNgrams);
+    }
+
+    private void ProcessToken(ReadOnlySpan<byte> token, List<int> words, List<int> wordHashes, List<int>? labels)
     {
         uint h = Hash(token);
         int wid = GetId(token, h);
@@ -233,7 +304,10 @@ internal sealed class Dictionary
             AddSubwords(words, token, wid);
             wordHashes.Add((int)h);
         }
-        // Labels are ignored for prediction.
+        else if (type == EntryType.Label && wid >= 0)
+        {
+            labels?.Add(wid - _nwords);
+        }
     }
 
     private static bool IsSpace(byte b) =>
@@ -302,6 +376,30 @@ internal sealed class Dictionary
         for (int i = 0; i < _size; i++)
         {
             _word2int[Find(_words[i].Word)] = i;
+        }
+    }
+
+    public void Save(BinaryWriter writer)
+    {
+        writer.Write(_size);
+        writer.Write(_nwords);
+        writer.Write(_nlabels);
+        writer.Write(_ntokens);
+        writer.Write(_pruneIdxSize);
+        for (int i = 0; i < _size; i++)
+        {
+            writer.Write(_words[i].Word);
+            writer.Write((byte)0);
+            writer.Write(_words[i].Count);
+            writer.Write((byte)_words[i].Type);
+        }
+        if (_pruneIdx is not null)
+        {
+            foreach (KeyValuePair<int, int> pair in _pruneIdx)
+            {
+                writer.Write(pair.Key);
+                writer.Write(pair.Value);
+            }
         }
     }
 

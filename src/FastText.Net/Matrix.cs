@@ -14,11 +14,30 @@ internal abstract class Matrix
     public abstract void AddRowToVector(Span<float> x, int i, float a);
     public abstract void AverageRowsToVector(Span<float> x, List<int> rows);
     public abstract void Load(BinaryReader reader);
+    public abstract void Save(BinaryWriter writer);
 }
 
 internal sealed class DenseMatrix : Matrix
 {
     private float[] _data = Array.Empty<float>();
+
+    public DenseMatrix() { }
+
+    public DenseMatrix(long rows, long cols)
+    {
+        Rows = rows;
+        Cols = cols;
+        _data = new float[checked(rows * cols)];
+    }
+
+    public void Zero() => Array.Clear(_data);
+
+    public void AddVectorToRow(ReadOnlySpan<float> vec, int i, float a)
+    {
+        int n = (int)Cols;
+        Span<float> row = _data.AsSpan(i * n, n);
+        TensorPrimitives.MultiplyAdd(vec, a, row, row);
+    }
 
     public override float DotRow(ReadOnlySpan<float> vec, int i)
     {
@@ -60,6 +79,15 @@ internal sealed class DenseMatrix : Matrix
         _data = new float[count];
         byte[] bytes = reader.ReadBytes(checked((int)(count * sizeof(float))));
         Buffer.BlockCopy(bytes, 0, _data, 0, bytes.Length);
+    }
+
+    public override void Save(BinaryWriter writer)
+    {
+        writer.Write(Rows);
+        writer.Write(Cols);
+        byte[] bytes = new byte[checked(_data.Length * sizeof(float))];
+        Buffer.BlockCopy(_data, 0, bytes, 0, bytes.Length);
+        writer.Write(bytes);
     }
 }
 
@@ -112,6 +140,21 @@ internal sealed class QuantMatrix : Matrix
             _normCodes = reader.ReadBytes((int)Rows);
             _npq = new ProductQuantizer();
             _npq.Load(reader);
+        }
+    }
+
+    public override void Save(BinaryWriter writer)
+    {
+        writer.Write(_qnorm);
+        writer.Write(Rows);
+        writer.Write(Cols);
+        writer.Write(_codesize);
+        writer.Write(_codes);
+        _pq.Save(writer);
+        if (_qnorm)
+        {
+            writer.Write(_normCodes);
+            _npq!.Save(writer);
         }
     }
 }

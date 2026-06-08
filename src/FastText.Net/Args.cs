@@ -50,4 +50,21 @@ internal sealed class Args
         LrUpdateRate = reader.ReadInt32();
         T = reader.ReadDouble();
     }
+
+    public void Save(BinaryWriter writer)
+    {
+        writer.Write(Dim);
+        writer.Write(Ws);
+        writer.Write(Epoch);
+        writer.Write(MinCount);
+        writer.Write(Neg);
+        writer.Write(WordNgrams);
+        writer.Write((int)Loss);
+        writer.Write((int)Model);
+        writer.Write(Bucket);
+        writer.Write(Minn);
+        writer.Write(Maxn);
+        writer.Write(LrUpdateRate);
+        writer.Write(T);
+    }
 }

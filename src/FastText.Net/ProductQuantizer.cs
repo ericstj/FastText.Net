@@ -76,4 +76,15 @@ internal sealed class ProductQuantizer
         byte[] bytes = reader.ReadBytes(count * sizeof(float));
         Buffer.BlockCopy(bytes, 0, _centroids, 0, bytes.Length);
     }
+
+    public void Save(BinaryWriter writer)
+    {
+        writer.Write(_dim);
+        writer.Write(_nsubq);
+        writer.Write(_dsub);
+        writer.Write(_lastdsub);
+        byte[] bytes = new byte[checked(_centroids.Length * sizeof(float))];
+        Buffer.BlockCopy(_centroids, 0, bytes, 0, bytes.Length);
+        writer.Write(bytes);
+    }
 }
