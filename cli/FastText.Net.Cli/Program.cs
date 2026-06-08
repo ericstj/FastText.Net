@@ -355,7 +355,7 @@ internal static class Program
         {
             Console.Error.WriteLine("usage: fasttext nn <model> <k>");
             Console.Error.WriteLine("  <model>      model filename");
-            Console.Error.WriteLine("  <k>          (optional; 10 by default) predict top k labels");
+            Console.Error.WriteLine("  <k>          (optional; 10 by default) print top k nearest neighbors");
             return 1;
         }
         int k = args.Length == 3 ? int.Parse(args[2], Inv) : 10;
@@ -381,7 +381,7 @@ internal static class Program
         {
             Console.Error.WriteLine("usage: fasttext analogies <model> <k>");
             Console.Error.WriteLine("  <model>      model filename");
-            Console.Error.WriteLine("  <k>          (optional; 10 by default) predict top k labels");
+            Console.Error.WriteLine("  <k>          (optional; 10 by default) print top k analogy results");
             return 1;
         }
         int k = args.Length == 3 ? int.Parse(args[2], Inv) : 10;

@@ -34,15 +34,16 @@ internal sealed class DenseMatrix : Matrix
     public void Zero() => Array.Clear(_data);
 
     /// <summary>
-    /// Initializes every element from U(-a, a), faithfully mirroring fastText's threaded
-    /// init: blocks are sized at total/10, so the default 12 threads cover the whole matrix
-    /// while fewer than 10 threads leave a tail uninitialized, exactly as upstream does.
+    /// Initializes every element from U(-a, a) using fastText's per-block seeded RNG, but
+    /// tiles the matrix across <paramref name="thread"/> blocks so the whole matrix is
+    /// covered for any thread count (upstream's fixed total/10 sizing leaves a tail
+    /// uninitialized when thread &lt; 10).
     /// </summary>
     public void Uniform(float a, int thread, int seed)
     {
         long total = (long)Rows * Cols;
-        long blockSize = total / 10;
         int blocks = Math.Max(thread, 1);
+        long blockSize = (total + blocks - 1) / blocks;
         for (int block = 0; block < blocks; block++)
         {
             var rng = new MinstdRand(block + seed);
